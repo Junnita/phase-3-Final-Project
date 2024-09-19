@@ -13,4 +13,4 @@ class Book:
         self.publisher = publisher
 
     def __str__(self):
-        return f"Title: {self.title}, Copy Number: {self.copy_number}, Available: {self.available}, Author: {self.author.name if self.author else 'Unknown'} Publisher: {self.publisher.name if self.publisher else 'Unknown'}"
+        return f"Title: {self.title}, Copy Number: {self.copy_number}, Available: {self.available}, 

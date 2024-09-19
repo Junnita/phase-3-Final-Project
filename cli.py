@@ -1,8 +1,8 @@
 import sqlite3
 
 class LibraryCLI:
-    def __init__(self, conn):
-        self.conn = conn
+    def __init__(self, connection):
+        self.conn = connection
 
     def create_tables(self):
         c = self.conn.cursor()
@@ -38,71 +38,78 @@ class LibraryCLI:
         ''')
 
         self.conn.commit()
-
     def add_author(self, name):
-        c = self.conn.cursor()
-        c.execute("INSERT INTO authors (name) VALUES (?)", (name,))
-        self.conn.commit()
-        print(f"Author '{name}' added successfully.")
+        with self.conn:
+            self.conn.execute("INSERT INTO authors (name) VALUES (?)", (name,))
+
+    def add_publisher(self, name):
+        with self.conn:
+            self.conn.execute("INSERT INTO publishers (name) VALUES (?)", (name,))
+
+    def add_book(self, title, description):
+        with self.conn:
+            self.conn.execute("INSERT INTO books (title, description) VALUES (?, ?)", (title, description))
+            return self.conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def assign_author_to_book(self, author_id, book_id):
+        with self.conn:
+            self.conn.execute("INSERT INTO book_authors (book_id, author_id) VALUES (?, ?)", (book_id, author_id))
+
+    def assign_publisher_to_book(self, publisher_id, book_id):
+        with self.conn:
+            self.conn.execute("INSERT INTO book_publishers (book_id, publisher_id) VALUES (?, ?)", (book_id, publisher_id))
 
     def list_authors(self):
-        c = self.conn.cursor()
-        c.execute("SELECT * FROM authors")
-        authors = c.fetchall()
-        if authors:
-            for author in authors:
-                print(f"ID: {author[0]}, Name: {author[1]}")
-        else:
-            print("No authors found.")    
-    
-    def add_publisher(self, name):
-        c = self.conn.cursor()
-        c.execute("INSERT INTO publishers (name) VALUES (?)", (name,))
-        self.conn.commit()
-        print(f"Publisher '{name}' added successfully.")
-
+        cursor = self.conn.execute("SELECT id, name FROM authors")
+        for row in cursor:
+            print(f"ID: {row[0]}, Name: {row[1]}")
 
     def list_publishers(self):
-        c = self.conn.cursor()
-        c.execute("SELECT * FROM publishers")
-        publishers = c.fetchall()
-        if publishers:
-            for publisher in publishers:
-                print(f"ID: {publisher[0]}, Name: {publisher[1]}")
-        else:
-            print("No publishers found.")
-
-
-    def add_book(self, title, copy_number):
-        c = self.conn.cursor()
-        c.execute("INSERT INTO books (title, copy_number) VALUES (?, ?)", (title, copy_number))
-        self.conn.commit()
-        print(f"Book '{title}' added successfully.")
-
+        cursor = self.conn.execute("SELECT id, name FROM publishers")
+        for row in cursor:
+            print(f"ID: {row[0]}, Name: {row[1]}")
 
     def list_books(self):
-        c = self.conn.cursor()
-        c.execute("SELECT * FROM books")
-        books = c.fetchall()
-        if books:
-            for book in books:
-                print(f"ID: {book[0]}, Title: {book[1]}, Copy Number: {book[2]}, Available: {book[3]}, Author ID: {book[4]}, Publisher ID: {book[5]}")
-        else:
-            print("No books found.")
+        cursor = self.conn.execute("SELECT id, title, description FROM books")
+        for row in cursor:
+            print(f"ID: {row[0]}, Title: {row[1]}, Description: {row[2]}")
 
+    def update_author(self, author_id, new_name):
+        with self.conn:
+            self.conn.execute("UPDATE authors SET name = ? WHERE id = ?", (new_name, author_id))
 
-    def assign_author_to_book(self, book_id, author_id):
-        c = self.conn.cursor()
-        c.execute("UPDATE books SET author_id=? WHERE id=?", (author_id, book_id))
-        self.conn.commit()
-        print(f"Author ID '{author_id}' assigned to book ID '{book_id}' successfully.")
+    def update_publisher(self, publisher_id, new_name):
+        with self.conn:
+            self.conn.execute("UPDATE publishers SET name = ? WHERE id = ?", (new_name, publisher_id))
 
-    def assign_publisher_to_book(self, book_id, publisher_id):
-        c = self.conn.cursor()
-        c.execute("UPDATE books SET publisher_id=? WHERE id=?", (publisher_id, book_id))
-        self.conn.commit()
-        print(f"Publisher ID '{publisher_id}' assigned to book ID '{book_id}' successfully.")
+    def update_book(self, book_id, new_title, new_description):
+        with self.conn:
+            self.conn.execute("UPDATE books SET title = ?, description = ? WHERE id = ?", (new_title, new_description, book_id))
+
+    def find_author_by_id(self, author_id):
+        cursor = self.conn.execute("SELECT * FROM authors WHERE id = ?", (author_id,))
+        return cursor.fetchone()
+
+    def find_publisher_by_id(self, publisher_id):
+        cursor = self.conn.execute("SELECT * FROM publishers WHERE id = ?", (publisher_id,))
+        return cursor.fetchone()
+
+    def find_book_by_id(self, book_id):
+        cursor = self.conn.execute("SELECT * FROM books WHERE id = ?", (book_id,))
+        return cursor.fetchone()
+
+    # Delete methods
+    def delete_author(self, author_id):
+        with self.conn:
+            self.conn.execute("DELETE FROM authors WHERE id = ?", (author_id,))
+
+    def delete_publisher(self, publisher_id):
+        with self.conn:
+            self.conn.execute("DELETE FROM publishers WHERE id = ?", (publisher_id,))
+
+    def delete_book(self, book_id):
+        with self.conn:
+            self.conn.execute("DELETE FROM books WHERE id = ?", (book_id,))
 
     def close_connection(self):
         self.conn.close()
-        print("Connection closed.")
