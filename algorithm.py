@@ -16,3 +16,5 @@ class Algorithms:
             output_data.append(item * 2)
 
         return output_data
+    
+    
